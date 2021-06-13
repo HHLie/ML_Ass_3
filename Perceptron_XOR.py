@@ -28,7 +28,7 @@ class Perceptron:
                 x = 1
             elif inputs[i] < 0.75:
                 x = 0
-            weighted_sum += self.weights[i] * inputs[i]
+            weighted_sum += self.weights[i] * x
 
 
         #weighted_sum = sum([self.weights[i] * inputs[i] for i in range(self.num_inputs)])
@@ -61,3 +61,6 @@ class Perceptron:
                 num_correct += 1.0
 
         return num_correct / len(examples)
+
+    def set_weights(self, s_weights):
+        self.weights = s_weights
