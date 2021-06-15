@@ -2,12 +2,12 @@
 # LXXHSI007
 # part 2
 """
-I used the ML assignment 0, Pytorch.py as refernce to code this script
+
 """
 
-#imports
+# imports
 import sys
-
+from io import BytesIO
 import torch, torchvision
 from torch import nn
 from torch import optim
@@ -22,15 +22,17 @@ if torch.cuda.is_available():
     device = torch.device("cuda:0")
 else:
     device = torch.device("cpu")
-    print("No Cuda Available")
+    print("Using CPU, no cuda found")
 
 T = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
 train_data = torchvision.datasets.MNIST('./', train=True, download=False, transform=T)
 val_data = torchvision.datasets.MNIST('./', train=False, download=False, transform=T)
 
 numb_batch = 64
-train_dl = torch.utils.data.DataLoader(train_data, batch_size = numb_batch)
-val_dl = torch.utils.data.DataLoader(val_data, batch_size = numb_batch)
+
+train_dl = torch.utils.data.DataLoader(train_data, batch_size=numb_batch)
+val_dl = torch.utils.data.DataLoader(val_data, batch_size=numb_batch)
+
 
 def net():
     model = nn.Sequential(
@@ -41,7 +43,7 @@ def net():
         nn.ReLU(),
         nn.AvgPool2d(2, stride=2),
         nn.Flatten(),
-        nn.Linear(400,  120),
+        nn.Linear(400, 120),
         nn.ReLU(),
         nn.Linear(120, 84),
         nn.ReLU(),
@@ -49,58 +51,56 @@ def net():
     )
     return model
 
+
 def validate(model, data):
     total = 0
     correct = 0
     for i, (images, labels) in enumerate(data):
         images = images.to(device)
         x = model(images)
-        value, pred = torch.max(x,1)
+        value, pred = torch.max(x, 1)
         pred = pred.data.cpu()
         total += x.size(0)
         correct += torch.sum(pred == labels)
-    return correct*100./total
+    return correct * 100. / total
 
-def train(numb_epoch=3, lr=1e-3, device="cpu"):
-    cnn = net().to(device)
+
+def train(numb_epoch=3, lr=1e-3, d=device):
+    cnn = net().to(d)
     cec = nn.CrossEntropyLoss()
     optimizer = optim.Adam(cnn.parameters(), lr=lr)
-    max_accuracy = 0
     for epoch in range(numb_epoch):
         for i, (images, labels) in enumerate(train_dl):
-            images = images.to(device)
-            labels = labels.to(device)
+            images = images.to(d)
+            labels = labels.to(d)
             optimizer.zero_grad()
-            pred = cnn(images)
-            loss = cec(pred, labels)
+            p = cnn(images)
+            loss = cec(p, labels)
             loss.backward()
             optimizer.step()
         accuracy = float(validate(cnn, val_dl))
-        if accuracy > max_accuracy:
-            best_model = copy.deepcopy(cnn)
-            max_accuracy = accuracy
-            print("Saving Best Model with Accuracy: ", accuracy)
-        print('Epoch:', epoch+1, "Accuracy :", accuracy, '%')
-    return best_model
+        print('Epoch:', epoch + 1, "\nAccuracy :", accuracy, '%')
+    return cnn
 
 
 def inference(path, model, device):
+    ima = Image.open(path)
 
-    img = Image.open(path)
-    img.convert(mode="L")
-    img = img.resize((28, 28))
-    x = (255 - numpy.expand_dims(numpy.array(img), -1)) / 255.
-    plt.imshow(x.squeeze(-1), cmap="gray")
-    plt.show()
-
+    with BytesIO() as f:
+        ima.save(f, format='JPEG')
+        f.seek(0)
+        img = Image.open(f)
+        img = img.resize((28, 28))
+    x = (numpy.expand_dims(numpy.array(img), -1)) / 255.
     with torch.no_grad():
-        pred = model(torch.unsqueeze(T(x), axis=0).float().to(device))
-        return F.softmax(pred, dim=-1).cpu().numpy()
+        prediction = model(torch.unsqueeze(T(x), axis=0).float().to(device))
+        return F.softmax(prediction, dim=-1).cpu().numpy()
 
 
 if __name__ == '__main__':
-
-    lenet = train(8, device=device)
+    print("Training Output...")
+    lenet = train(4, d=device)
+    print("Done")
     print("Enter a image address: ")
     for line in sys.stdin:
         if 'exit' == line.rstrip():
