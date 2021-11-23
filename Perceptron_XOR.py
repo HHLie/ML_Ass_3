@@ -20,18 +20,17 @@ class Perceptron:
         self.bias = bias
         self.float_threshold = float_threshold
 
-    def activate(self, inputs: [float]) -> int:
+    def activate(self, inputs: [float]) -> float:
         weighted_sum = 0
+        """
         for i in range(self.num_inputs):
             x = inputs[i]
-            if inputs[i] >= 0.75:
-                x = 1
-            elif inputs[i] < 0.75:
-                x = 0
+
             weighted_sum += self.weights[i] * x
+            
+        """
 
-
-        #weighted_sum = sum([self.weights[i] * inputs[i] for i in range(self.num_inputs)])
+        weighted_sum = sum([self.weights[i] * inputs[i] for i in range(self.num_inputs)])
 
         return 1 if weighted_sum + self.bias > 0 else 0
 

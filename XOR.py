@@ -43,6 +43,10 @@ import os
 import random
 from Perceptron_XOR import Perceptron
 
+#global varibles
+AND = Perceptron(2)
+OR = Perceptron(2)
+NOT = Perceptron(1)
 
 def train(examples, labels, bias, num_inputs, learning_rate, seeded_weights: [float] = None):
     """
@@ -55,7 +59,6 @@ def train(examples, labels, bias, num_inputs, learning_rate, seeded_weights: [fl
     else:
         P = Perceptron(num_inputs, bias=bias)
 
-    # print(P.weights)
     valid_percentage = P.validate(examples, labels, verbose=True)
     i = 0
     while valid_percentage < 0.98:  # We want our Perceptron to have an accuracy of at least 80%
@@ -67,30 +70,50 @@ def train(examples, labels, bias, num_inputs, learning_rate, seeded_weights: [fl
 
         # This is just to break the training if it takes over 50 iterations. (For demonstration purposes)
         # You shouldn't need to do this as your networks may require much longer to train.
-        if i == 50:
+        if i == 100:
+            #print(valid_percentage)
             break
     return P
 
 
-if __name__ == '__main__':
+def XOR(input):
+    """
+    Layer the perceptrons to create the XOR multi layer perceptrons
+    XOR = (OR) AND NOT(AND)
+    """
+    # OR
+    Or_value = OR.activate(input)
+    #print(Or_value)
+    # AND
+    AND_value = AND.activate(input)
+    # NOT(AND)
+    #print(AND_value)
+    Nand_value = NOT.activate([AND_value])
+    # XOR = (OR) AND NOT(AND)
+    #print(Nand_value)
+    return AND.activate([Or_value, Nand_value])
 
-    AND = Perceptron(2)
-    OR = Perceptron(2)
-    NOT = Perceptron(1)
+if __name__ == '__main__':
+    #global AND, OR, NOT
+
     print("!!!OPTIONS!!!")
     print("train : trains the perceptrons")
-    print("set : set seeded weights from pretrained_weights.txt")
-    print("save : save the current trained weights into pretrained_weights.txt")
-    print("exit : exit the program")
-    print("else enter two float values separated by a space and bound to the assignment requirements")
+    print("set   : set seeded weights from pretrained_weights.txt")
+    print("save  : save the current trained weights into pretrained_weights.txt")
+    print("exit  : exit the program")
+    print("else \nenter two float values separated by a space and bound to the assignment requirements")
     print("---------")
     print("Enter 'set' to set seeded weights from pretrained_weights.txt")
     print("or")
     print("Enter 'train' to train the perceptrons")
     for line in sys.stdin:
         if 'exit' == line.rstrip():
+            print("Exiting....")
             break
         if 'train' == line.rstrip():
+            """
+            read and train data
+            """
             AND_examples = np.loadtxt("AND.txt", usecols=(0, 1), dtype='float_')
             AND_labels = np.loadtxt("AND.txt", usecols=(2), dtype='float_')
             OR_examples = np.loadtxt("OR.txt", usecols=(0, 1), dtype='float_')
@@ -102,7 +125,7 @@ if __name__ == '__main__':
                 NOT_examples.append([i])
 
             print("Training And Gate")
-            AND = train(AND_examples, AND_labels, -1, 2, 0.5)
+            AND = train(AND_examples, AND_labels, -1, 2, 0.2)
             print("Training OR Gate")
             OR = train(OR_examples, OR_labels, -0.5, 2, 0.2)
             print("Training NOT Gate")
@@ -121,28 +144,25 @@ if __name__ == '__main__':
             f.write(" 0.0")
             f.close()
         if 'set' == line.rstrip():
+            """
+            set seeded_weights
+            """
             s = np.loadtxt("pretrained_weights.txt",dtype='float_')
-            AND.set_weights(s[0])
-            OR.set_weights(s[1])
-            NOT.set_weights([s[2][0]])
+            AND = Perceptron(2, bias=-1.5,seeded_weights=s[0])
+            OR = Perceptron(2, bias=-0.5,seeded_weights=s[1])
+            NOT = Perceptron(1, bias=0.5,seeded_weights=[s[2][0]])
+            print("AND weights:")
             print(AND.weights)
+            print("OR weights:")
             print(OR.weights)
+            print("NOT weights:")
             print(NOT.weights)
         arr = line.strip().split(" ")
         input_gate = []
         if len(arr) == 2:
             input_gate.append(float(arr[0]))
             input_gate.append(float(arr[1]))
-            """
-            Layer the perceptrons to create the XOR multi layer perceptrons
-            XOR = (OR) AND NOT(AND)
-            """
-            #OR
-            Or_value = OR.activate(input_gate)
-            #AND
-            AND_value = AND.activate(input_gate)
-            # NOT(AND)
-            Nand_value = NOT.activate([AND_value])
-            #XOR = (OR) AND NOT(AND)
-            print("XOR Gate:", AND.activate([Or_value, Nand_value]))
+            #XOR
+            X = XOR(input_gate)
+            print("XOR Gate: ", X)
         print("\nPlease enter two inputs or 'exit' to exit:")
